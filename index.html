@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    
+    <title>クリエイターのための無料ツール集</title>
+    
+    <!-- LINE Seed JP を読み込み -->
+    <link rel="stylesheet" href="https://unpkg.com/@fontsource/line-seed-jp@5.0.1/index.css">
+    
+    <style>
+        :root {
+            --bg-color: #fcfcfc;    
+            --accent-color: #ffde00; 
+            --black: #333;          
+            --white: #fff;
+            
+            /* 線を細く（2px）、角丸を大きく（20px） */
+            --border: 2px solid #333;
+            --shadow: 4px 4px 0px 0px #333;
+            --radius: 20px;
+            
+            /* 全体のフォントを LINE Seed JP に統一 */
+            --font-main: "Line Seed JP", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--black);
+            font-family: var(--font-main);
+            font-weight: 300; /* 細めのウェイト */
+            margin: 0;
+            padding: 2rem;
+            min-height: 100vh;
+            box-sizing: border-box;
+            letter-spacing: 0.02em;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--white);
+            border: var(--border);
+            box-shadow: var(--shadow);
+            border-radius: var(--radius);
+            padding: 5rem 3rem;
+            position: relative;
+            opacity: 0;
+            animation: containerPop 0.8s ease-out forwards;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700; /* LINE Seedの太めをタイトルに使用 */
+            margin: 0 0 1.5rem 0;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .bio {
+            font-size: 1rem;
+            line-height: 2;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto;
+            font-weight: 400;
+        }
+        
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 2rem;
+            margin-bottom: 5rem;
+        }
+        
+        /* カード */
+        .card { 
+            border: var(--border);
+            border-radius: var(--radius);
+            background: #fff;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1), box-shadow 0.2s; 
+            opacity: 0;
+            animation: cardPop 0.5s ease-out forwards;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+        }
+        .card-img-wrap {
+            height: 220px;
+            border-bottom: var(--border);
+            overflow: hidden;
+            background: #f9f9f9;
+        }
+        .card-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .card-body { 
+            padding: 1.5rem; 
+        }
+        .card-cat {
+            font-size: 0.7rem;
+            color: #aaa;
+            display: block;
+            margin-bottom: 0.4rem;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .card-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        /* コンタクト */
+        .contact-area {
+            text-align: center;
+            padding-top: 4rem;
+            border-top: 1px solid #eee;
+        }
+        .contact-area h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem; /* 下の文との間隔を調整 */
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+        /* 追加した注釈テキストのスタイル */
+        .contact-note {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 2rem;
+            font-weight: 400;
+        }
+
+        .pop-btn {
+            display: inline-block;
+            background: var(--accent-color);
+            color: var(--black);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 0.9rem 3.5rem;
+            border: var(--border);
+            border-radius: 50px;
+            transition: 0.3s;
+            cursor: pointer;
+            text-align: center;
+            font-family: var(--font-main);
+        }
+        .pop-btn:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow);
+        }
+
+        /* モーダル */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.97); 
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            padding: 1.5rem;
+            transition: opacity 0.3s ease;
+        }
+        .modal.active { opacity: 1; visibility: visible; }
+        
+        .modal-content {
+            background: var(--white);
+            border: var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 2.5rem;
+            max-width: 500px;
+            width: 100%;
+            transform: translateY(30px);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 90vh;
+            overflow-y: auto;
+            overflow-x: hidden; 
+            box-sizing: border-box;
+        }
+        .modal.active .modal-content { transform: translateY(0); }
+        
+        .modal-img {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            max-height: 280px;
+            object-fit: cover;
+            border-radius: calc(var(--radius) / 2);
+            border: 1px solid #eee;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 1rem 0;
+        }
+        .modal-desc {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            color: #555;
+            word-wrap: break-word;
+            font-weight: 400;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0.5rem;
+            transition: color 0.2s;
+            font-family: var(--font-main);
+            font-weight: 400;
+        }
+        .close-btn:hover { color: var(--black); }
+
+        @keyframes containerPop {
+            0% { transform: translateY(30px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes cardPop {
+            0% { transform: scale(0.98); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @media (max-width: 600px) { 
+            .container { padding: 3rem 1.5rem; }
+            h1 { font-size: 1.8rem; }
+            .modal-content { padding: 1.5rem; }
+            .modal-footer { justify-content: center; flex-direction: column; }
+            .modal-footer .pop-btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="user-name"></h1>
+            <p id="user-bio" class="bio"></p>
+        </header>
+        
+        <div id="gallery-grid" class="gallery-grid"></div>
+        
+        <div class="contact-area">
+            <h2>Contact</h2>
+            <!-- 追加されたテキスト -->
+            <p class="contact-note">ツールのリクエストなどあればお気軽にお問い合わせください</p>
+            <div id="links-list"></div>
+        </div>
+        
+        <p style="text-align: center; margin-top: 5rem; font-size: 0.75rem; color: #bbb; letter-spacing: 0.1em; font-weight: 400;">
+            &copy; <span id="year"></span> <span id="footer-name">NAME</span>
+        </p>
+    </div>
+
+    <!-- モーダル本体 -->
+    <div id="modal" class="modal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <img id="modal-img" class="modal-img" src="" alt="Project Image">
+            <div class="modal-info">
+                <h2 id="modal-title" class="modal-title"></h2>
+                <p id="modal-desc" class="modal-desc"></p>
+                <div class="modal-footer">
+                    <a id="modal-action-btn" class="pop-btn" target="_blank" rel="noopener" style="padding: 0.7rem 2rem; font-size: 0.9rem;">試してみる</a>
+                    <button onclick="closeModal()" class="close-btn">閉じる</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const config = {
+            name: "クリエイターのための無料ツール集",
+            bio: "プロからアマチュアまで、全てのクリエイターにとって\n役に立つツールを作って公開・配布しています",
+            
+            works: [
+                { 
+                    title: "台割エディター", 
+                    category: "Web Application", 
+                    description: "ページ数と折丁を入力するだけで、冊子の台割を自動作成。見開き表示や完成プレビューで確認でき、各ページの進捗や担当者も直感的に管理できる制作エディターです。",
+                    link: "tools/flatplan-editor.html"
+                },
+                { 
+                    title: "面付けシミュレーション", 
+                    category: "Digital Service", 
+                    description: "中綴じ冊子の印刷で必要になる「面付け」をシミュレーションできるツールです。ページ数や綴じ方を入力すると、印刷用紙の上でページがどのように配置されるかを自動で表示します。",
+                    link: "https://example.com/p2"
+                },
+                { 
+                    title: "直感配色ジェネレーター", 
+                    category: "Minimal Object", 
+                    description: "「かわいい感じ」など直感的に選ぶことで、おすすめの配色をランダムで提案します",
+                    link: "https://example.com/p3"
+                },
+                { 
+                    title: "デザイナータイプ診断", 
+                    category: "Creativity Tools", 
+                    description: "デザインの考え方や制作スタイルは人それぞれ。この診断では、いくつかの質問に答えることで、あなたのデザイン思考や制作スタイルから「デザイナータイプ」を分析します。息抜きにどうぞ。",
+                    link: "https://example.com/p4"
+                },
+            ],
+            
+            contactUrl: "mailto:natade621@gmail.com"
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('user-name').textContent = config.name;
+            document.getElementById('user-bio').innerHTML = config.bio.replace(/\n/g, '<br>');
+            document.getElementById('footer-name').textContent = config.name;
+            document.getElementById('year').textContent = new Date().getFullYear();
+
+            const grid = document.getElementById('gallery-grid');
+            config.works.forEach((work, index) => {
+                const imagePath = `image/image${index + 1}.jpg`;
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.animationDelay = `${0.2 + (index * 0.1)}s`; 
+
+                div.innerHTML = `
+                    <div class="card-img-wrap">
+                        <img src="${imagePath}" class="card-img" alt="${work.title}" 
+                             onerror="this.src='https://via.placeholder.com/600x400?text=Project+Image'">
+                    </div>
+                    <div class="card-body">
+                        <span class="card-cat">${work.category}</span>
+                        <div class="card-title">${work.title}</div>
+                    </div>
+                `;
+                
+                div.onclick = () => openModal(work, imagePath);
+                grid.appendChild(div);
+            });
+
+            const linkList = document.getElementById('links-list');
+            const a = document.createElement('a'); 
+            a.href = config.contactUrl; 
+            a.className = 'pop-btn'; 
+            a.textContent = "Contact Me"; 
+            linkList.appendChild(a); 
+        });
+
+        const modal = document.getElementById('modal');
+        
+        function openModal(work, imagePath) {
+            const modalImg = document.getElementById('modal-img');
+            modalImg.src = imagePath;
+            modalImg.onerror = () => { modalImg.src = 'https://via.placeholder.com/600x400?text=No+Image'; };
+            
+            document.getElementById('modal-title').textContent = work.title;
+            
+            const descEl = document.getElementById('modal-desc');
+            descEl.innerHTML = (work.description || "説明文がありません。").replace(/\n/g, '<br>');
+            
+            const actionBtn = document.getElementById('modal-action-btn');
+            if (work.link) {
+                actionBtn.href = work.link;
+                actionBtn.style.display = 'inline-block';
+            } else {
+                actionBtn.style.display = 'none';
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() { 
+            modal.classList.remove('active'); 
+            document.body.style.overflow = ''; 
+        }
+    </script>
+</body>
+</html>
