@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>クリエイターのための無料ツール集 | 台割エディター</title>
+    <title>Flatplan Generator v3.0 | 台割エディター</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
@@ -75,13 +75,19 @@
 
         .dragging-col { opacity: 0.5; background: var(--brand-yellow) !important; }
         .dragging-row { opacity: 0.3; background: #e2e8f0 !important; }
+        .drop-target-indicator { border-top: 4px solid var(--brand-yellow) !important; }
 
         input:focus, textarea:focus, select:focus {
             outline: none;
             background-color: #fff9db !important;
         }
 
-        /* 進行状況バッジ */
+        .auto-expand {
+            min-height: 2.5rem;
+            overflow: hidden;
+            resize: none;
+        }
+
         .badge {
             border: 2px solid var(--border-dark);
             border-radius: 999px;
@@ -90,21 +96,15 @@
             padding: 2px 12px;
         }
 
-        /* フラットな見開き用スタイル */
         .spread-page {
             background-color: #ffffff;
             border: 1px solid var(--border-dark);
             position: relative;
             transition: all 0.2s ease;
         }
-        .spread-page-left {
-            border-radius: 2px 0 0 2px;
-        }
-        .spread-page-right {
-            border-radius: 0 2px 2px 0;
-        }
+        .spread-page-left { border-radius: 2px 0 0 2px; }
+        .spread-page-right { border-radius: 0 2px 2px 0; }
 
-        /* プレビュー用（Flip） */
         .book-container { perspective: 2000px; }
         .book-page {
             transition: all 0.4s ease;
@@ -120,14 +120,14 @@
         }
         .book-spine { width: 4px; background: var(--border-dark); height: 100%; opacity: 0.1; }
 
-        /* セレクトボックスのカスタム */
         .custom-select-ui {
             appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23333'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 12px;
-            padding-right: 32px !important;
+            background-position: right 8px center;
+            background-size: 10px;
+            padding-right: 24px !important;
+            border-bottom: none !important;
         }
 
         ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -139,9 +139,8 @@
 
 <div id="app" class="max-w-[1300px] mx-auto">
     
-    <!-- Hero Section -->
     <header class="text-center py-12">
-        <h1 class="text-5xl font-black tracking-tight mb-4 uppercase">Flatplan Maker</h1>
+        <h1 class="text-5xl font-black tracking-tight mb-4 uppercase">Flatplan Generator</h1>
         <p class="text-slate-500 font-bold text-sm sm:text-base mb-10">
             パンフレットの構成・進行を直感的に管理できる<br>
             クリエイターのための編集ツール
@@ -158,7 +157,6 @@
         </div>
     </header>
 
-    <!-- Controls -->
     <div class="flex flex-col xl:flex-row justify-between items-center gap-6 mb-10 border-t-4 border-slate-900 pt-10">
         <div class="flex bg-slate-100 p-1.5 rounded-2xl flex-wrap justify-center">
             <button onclick="switchView('table')" id="tab-table" class="px-8 py-3 rounded-xl text-xs font-black transition-all bg-white shadow-sm border border-slate-200">
@@ -172,7 +170,7 @@
             </button>
         </div>
 
-        <div class="flex flex-wrap items-center justify-center gap-8 bg-slate-50 px-8 py-4 rounded-[2rem] border-2 border-slate-900">
+        <div class="flex flex-wrap items-center justify-center gap-6 bg-slate-50 px-8 py-4 rounded-[2rem] border-2 border-slate-900">
             <div class="flex flex-col items-start">
                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">折丁</span>
                 <select id="signatureSelect" onchange="updateSignature(this.value)" class="custom-select-ui bg-transparent font-black text-lg border-none focus:ring-0 cursor-pointer">
@@ -191,13 +189,17 @@
                 </div>
             </div>
             <div class="h-10 w-0.5 bg-slate-200"></div>
-            <button onclick="openAddColModal()" class="btn-outline flex items-center gap-2 text-xs uppercase tracking-tighter">
-                <i class="fa-solid fa-plus"></i> 項目を追加
-            </button>
+            <div class="flex gap-2">
+                <button onclick="openStaffModal()" class="btn-outline flex items-center gap-2 text-xs uppercase tracking-tighter hover:bg-slate-900 hover:text-white">
+                    <i class="fa-solid fa-users"></i> メンバー編集
+                </button>
+                <button onclick="openAddColModal()" class="btn-outline flex items-center gap-2 text-xs uppercase tracking-tighter">
+                    <i class="fa-solid fa-plus"></i> 項目を追加
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- Main View: Table -->
     <div id="tableView" class="card-container mb-20 shadow-2xl shadow-slate-200/50">
         <div class="overflow-x-auto">
             <table class="w-full text-left" id="flatplanTable">
@@ -207,12 +209,10 @@
         </div>
     </div>
 
-    <!-- Main View: Spread -->
     <div id="spreadView" class="hidden pb-20 px-4 md:px-0">
         <div id="spreadGrid" class="space-y-24"></div>
     </div>
 
-    <!-- Main View: Flip (Preview) -->
     <div id="flipView" class="hidden flex flex-col items-center justify-center py-20 min-h-[600px]">
         <div class="flex items-center gap-6 sm:gap-12 mb-12 w-full justify-center">
             <button onclick="flipPrev()" class="w-12 h-12 rounded-full border-2 border-slate-900 flex items-center justify-center hover:bg-slate-50 transition-all disabled:opacity-10" id="flipPrevBtn">
@@ -226,9 +226,20 @@
         <div class="text-xs font-black tracking-widest text-slate-900 bg-brand-yellow border-2 border-slate-900 px-8 py-3 rounded-full shadow-md" id="flipPageIndicator">1 / 9 見開き</div>
     </div>
 
-    <div class="pt-20 pb-12 text-center border-t-2 border-slate-50">
-        <p class="text-[10px] font-black text-slate-300 tracking-[0.3em] uppercase">© 2026 FLATPLAN MAKER v2.6</p>
-    </div>
+    <footer class="pt-20 pb-12 text-center border-t-2 border-slate-50">
+        <div class="max-w-2xl mx-auto mb-10 px-6">
+            <p class="text-[10px] font-bold text-slate-400 leading-loose text-left mb-6">
+                ※免責事項：本ツールはブラウザ上でのみ動作し、入力されたデータをサーバーに保存することはありません。ブラウザを閉じたりキャッシュをクリアしたりするとデータが失われる可能性があります。必ず作業終了時には「ファイルを保存」からバックアップを取得してください。本ツールの利用により生じたデータの損失やいかなる損害についても、開発者は一切の責任を負いません。
+            </p>
+            <p class="text-[10px] font-bold text-slate-400 text-left mb-4">
+                Font: LINE Seed JP (LINE Yahoo Corporation)
+            </p>
+            <p class="text-[10px] font-bold">
+                <a href="privacy.html" class="text-slate-900 underline underline-offset-4">プライバシーポリシー</a>
+            </p>
+        </div>
+        <p class="text-[10px] font-black text-slate-300 tracking-[0.3em] uppercase">© 2026 FLATPLAN GENERATOR v3.0</p>
+    </footer>
 </div>
 
 <!-- Modal -->
@@ -255,6 +266,19 @@
     </div>
 </div>
 
+<!-- Member Modal -->
+<div id="staffModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md">
+    <div class="bg-white rounded-[40px] border-4 border-slate-900 shadow-2xl max-w-md w-full p-10 relative">
+        <h3 class="text-2xl font-black mb-6 text-center uppercase tracking-tight">メンバー編集</h3>
+        <div id="staffListContainer" class="space-y-3 mb-6 max-h-60 overflow-y-auto pr-2"></div>
+        <div class="flex gap-2">
+            <input type="text" id="newStaffName" placeholder="新しい名前..." class="flex-1 px-4 py-2 border-2 border-slate-200 rounded-xl font-bold focus:border-slate-900 outline-none">
+            <button onclick="addStaffMember()" class="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-all text-sm">追加</button>
+        </div>
+        <button onclick="closeStaffModal()" class="w-full mt-8 py-3 bg-brand-yellow border-2 border-slate-900 rounded-2xl font-black text-sm uppercase tracking-widest">設定を保存して閉じる</button>
+    </div>
+</div>
+
 <script>
     let state = {
         totalPages: 16, signature: 8, view: 'table', flipIndex: 0,
@@ -277,7 +301,22 @@
     let draggedColIdx = null;
     let draggedRowIdx = null;
 
+    function escapeHTML(str) {
+        if (!str) return '';
+        return str.replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+        });
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem('flatplan_data_autosave', JSON.stringify(state));
+    }
+
     function init() {
+        const savedData = localStorage.getItem('flatplan_data_autosave');
+        if (savedData) {
+            try { state = JSON.parse(savedData); } catch(e) { console.error("Auto-load failed", e); }
+        }
         if (state.pages.length === 0) generatePages();
         render();
         document.addEventListener('keydown', (e) => {
@@ -300,6 +339,7 @@
             newPages.push(pageObj);
         }
         state.pages = newPages;
+        saveToLocalStorage();
     }
 
     function render() {
@@ -309,24 +349,18 @@
         renderTableBody();
         if (state.view === 'spread') renderSpread();
         if (state.view === 'flip') renderFlipView();
+        setTimeout(() => { document.querySelectorAll('textarea').forEach(autoResize); }, 0);
     }
 
     function renderTableHeader() {
         const header = document.getElementById('tableHeader');
-        header.innerHTML = `
-            <th class="w-16 text-center border-r border-slate-200">P</th>
-            <th class="w-32 text-center border-r border-slate-200">タイプ</th>
-        `;
-
+        header.innerHTML = '';
+        header.innerHTML += `<th class="w-16 text-center border-r border-slate-200">P</th><th class="w-32 text-center border-r border-slate-200">タイプ</th>`;
         state.columns.forEach((col, idx) => {
             const th = document.createElement('th');
             th.className = "relative group cursor-grab active:cursor-grabbing border-r border-slate-200 hover:bg-slate-200 transition-colors select-none";
             th.draggable = true;
-            th.addEventListener('dragstart', (e) => {
-                draggedColIdx = idx;
-                th.classList.add('dragging-col');
-                e.dataTransfer.setData('text/plain', idx);
-            });
+            th.addEventListener('dragstart', (e) => { draggedColIdx = idx; th.classList.add('dragging-col'); e.dataTransfer.setData('text/plain', idx); });
             th.addEventListener('dragover', (e) => e.preventDefault());
             th.addEventListener('drop', (e) => {
                 e.preventDefault();
@@ -337,18 +371,10 @@
                 }
             });
             th.addEventListener('dragend', () => th.classList.remove('dragging-col'));
-
-            th.innerHTML = `
-                <div class="flex items-center justify-between gap-2 px-2">
-                    <span contenteditable="true" onblur="renameColumn('${col.id}', this.innerText)" class="focus:bg-white px-2 py-1 rounded outline-none block flex-1 truncate font-black">${col.label}</span>
-                    <button onclick="deleteColumn('${col.id}')" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all">
-                        <i class="fa-solid fa-circle-xmark"></i>
-                    </button>
-                </div>
-            `;
+            th.innerHTML = `<div class="flex items-center justify-between gap-2 px-2"><span contenteditable="true" class="focus:bg-white px-2 py-1 rounded outline-none block flex-1 truncate font-black">${escapeHTML(col.label)}</span><button onclick="deleteColumn('${col.id}')" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all"><i class="fa-solid fa-circle-xmark"></i></button></div>`;
+            th.querySelector('span').onblur = function() { renameColumn(col.id, this.textContent); };
             header.appendChild(th);
         });
-        header.innerHTML += `<th class="w-12"></th>`;
     }
 
     function renderTableBody() {
@@ -359,10 +385,12 @@
             tr.className = "group hover:bg-slate-50 transition-colors";
             tr.draggable = true;
             tr.dataset.index = index;
-            tr.addEventListener('dragstart', (e) => { draggedRowIdx = index; tr.classList.add('dragging-row'); });
-            tr.addEventListener('dragover', (e) => e.preventDefault());
+            tr.addEventListener('dragstart', (e) => { draggedRowIdx = index; tr.classList.add('dragging-row'); e.dataTransfer.effectAllowed = 'move'; });
+            tr.addEventListener('dragover', (e) => { e.preventDefault(); tr.classList.add('drop-target-indicator'); });
+            tr.addEventListener('dragleave', () => tr.classList.remove('drop-target-indicator'));
             tr.addEventListener('drop', (e) => {
                 e.preventDefault();
+                tr.classList.remove('drop-target-indicator');
                 const dropIdx = parseInt(tr.dataset.index);
                 if (draggedRowIdx !== null && draggedRowIdx !== dropIdx) {
                     const rowData = state.pages.splice(draggedRowIdx, 1)[0];
@@ -372,52 +400,26 @@
                 }
             });
             tr.addEventListener('dragend', () => tr.classList.remove('dragging-row'));
-
-            let html = `
-                <td class="py-4 px-4 text-center font-black text-slate-200 text-sm border-r border-slate-100">${page.num}</td>
-                <td class="py-4 px-2 border-r border-slate-100">
-                    <input type="text" value="${page.type}" oninput="updatePageData(${index}, 'type', this.value)" 
-                        class="w-full px-2 py-1 bg-transparent font-black text-[10px] text-center text-slate-400 uppercase tracking-widest outline-none">
-                </td>
-            `;
-
+            let html = `<td class="py-4 px-4 text-center font-black text-slate-200 text-sm border-r border-slate-100">${page.num}</td><td class="py-4 px-2 border-r border-slate-100"><input type="text" value="${escapeHTML(page.type)}" oninput="updatePageData(${index}, 'type', this.value)" class="w-full px-2 py-1 bg-transparent font-black text-[10px] text-center text-slate-400 uppercase tracking-widest outline-none"></td>`;
             state.columns.forEach(col => {
                 const val = page[col.id] || "";
-                html += `<td class="py-3 px-3 border-r border-slate-50">`;
+                html += `<td class="py-3 px-3 border-r border-slate-50 align-top last:border-r-0">`;
                 if (col.type === 'status') {
                     const o = state.statusOptions.find(x => x.id === val) || state.statusOptions[0];
-                    html += `
-                        <select onchange="updatePageData(${index}, '${col.id}', this.value)" 
-                            class="badge w-full text-center appearance-none cursor-pointer outline-none ${o.colorClass}">
-                            ${state.statusOptions.map(opt => `<option value="${opt.id}" ${opt.id === val ? 'selected' : ''}>${opt.label}</option>`).join('')}
-                        </select>
-                    `;
+                    html += `<select onchange="updatePageData(${index}, '${col.id}', this.value)" class="badge w-full text-center appearance-none cursor-pointer outline-none ${o.colorClass}">${state.statusOptions.map(opt => `<option value="${opt.id}" ${opt.id === val ? 'selected' : ''}>${opt.label}</option>`).join('')}</select>`;
                 } else if (col.type === 'staff') {
-                    html += `
-                        <select onchange="updatePageData(${index}, '${col.id}', this.value)" 
-                            class="w-full text-[11px] font-black bg-transparent px-2 py-1 rounded outline-none cursor-pointer">
-                            <option value="">-</option>
-                            ${state.staffOptions.map(name => `<option value="${name}" ${name === val ? 'selected' : ''}>${name}</option>`).join('')}
-                        </select>
-                    `;
+                    html += `<select onchange="updatePageData(${index}, '${col.id}', this.value)" class="custom-select-ui w-full text-[11px] font-black bg-transparent px-2 py-1 rounded outline-none cursor-pointer border-none"><option value="">-</option>${state.staffOptions.map(name => `<option value="${escapeHTML(name)}" ${name === val ? 'selected' : ''}>${escapeHTML(name)}</option>`).join('')}</select>`;
                 } else {
-                    const isLong = col.isLong;
-                    const inputType = isLong ? 'textarea' : 'input';
-                    html += `
-                        <${inputType} ${isLong ? '' : 'type="text"'} value="${val}" 
-                            onkeydown="handleKeyNav(event, ${index}, '${col.id}')" 
-                            oninput="updatePageData(${index}, '${col.id}', this.value)" 
-                            placeholder="..." 
-                            class="w-full px-2 py-1 bg-transparent text-sm font-bold border-none outline-none ${isLong ? 'resize-none h-8 leading-relaxed focus:h-20 transition-all overflow-hidden' : ''}">${isLong ? val : ''}</${inputType}>
-                    `;
+                    html += `<textarea onkeydown="handleKeyNav(event, ${index}, '${col.id}')" oninput="updatePageData(${index}, '${col.id}', this.value); autoResize(this)" placeholder="..." class="auto-expand w-full px-2 py-1 bg-transparent text-sm font-bold border-none outline-none overflow-hidden">${escapeHTML(val)}</textarea>`;
                 }
                 html += `</td>`;
             });
-            html += `<td class="text-center opacity-0 group-hover:opacity-100 text-slate-300"><i class="fa-solid fa-grip-vertical"></i></td>`;
             tr.innerHTML = html;
             tbody.appendChild(tr);
         });
     }
+
+    function autoResize(el) { if (!el || el.tagName !== 'TEXTAREA') return; el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
 
     function handleKeyNav(e, rowIdx, colId) {
         if (e.isComposing || e.keyCode === 229) return;
@@ -431,11 +433,7 @@
                     const inputs = document.querySelectorAll(`[onkeydown*="'${colId}'"]`);
                     if (inputs[targetRow]) {
                         inputs[targetRow].focus();
-                        if (inputs[targetRow].tagName !== 'SELECT') {
-                           const val = inputs[targetRow].value;
-                           inputs[targetRow].value = '';
-                           inputs[targetRow].value = val;
-                        }
+                        if (inputs[targetRow].tagName !== 'SELECT') { const val = inputs[targetRow].value; inputs[targetRow].value = ''; inputs[targetRow].value = val; }
                     }
                 }, 10);
             }
@@ -443,155 +441,90 @@
     }
 
     function renderSpread() {
-        const grid = document.getElementById('spreadGrid');
-        grid.innerHTML = '';
-        
-        // 表1 (右側のみ)
+        const grid = document.getElementById('spreadGrid'); grid.innerHTML = '';
         grid.appendChild(createSpreadWrapper([null, state.pages[0]]));
-        
-        // 本文 (見開き)
-        for (let i = 1; i < state.pages.length - 1; i += 2) {
-            grid.appendChild(createSpreadWrapper([state.pages[i], state.pages[i+1]]));
-        }
-        
-        // 表4 (左側のみ)
-        if (state.totalPages % 2 === 0) {
-            grid.appendChild(createSpreadWrapper([state.pages[state.pages.length - 1], null]));
-        }
+        for (let i = 1; i < state.pages.length - 1; i += 2) { grid.appendChild(createSpreadWrapper([state.pages[i], state.pages[i+1]])); }
+        if (state.totalPages % 2 === 0) grid.appendChild(createSpreadWrapper([state.pages[state.pages.length - 1], null]));
     }
 
     function createSpreadWrapper(ps) {
-        const wrap = document.createElement('div');
-        wrap.className = "flex justify-center items-stretch";
+        const wrap = document.createElement('div'); wrap.className = "flex justify-center items-stretch";
         ps.forEach((p, idx) => {
-            if (!p) {
-                const empty = document.createElement('div');
-                empty.className = "w-48 h-64 md:w-[350px] md:h-[480px]";
-                wrap.appendChild(empty);
-                return;
-            }
+            if (!p) { const empty = document.createElement('div'); empty.className = "w-48 h-64 md:w-[350px] md:h-[480px]"; wrap.appendChild(empty); return; }
             const isLeft = (idx === 0);
-            const pageDiv = document.createElement('div');
-            pageDiv.className = `w-48 h-64 md:w-[350px] md:h-[480px] spread-page ${isLeft ? 'spread-page-left' : 'spread-page-right'} p-8 md:p-12 flex flex-col`;
-            
-            let contentHtml = "";
+            const pageDiv = document.createElement('div'); pageDiv.className = `w-48 h-64 md:w-[350px] md:h-[480px] spread-page ${isLeft ? 'spread-page-left' : 'spread-page-right'} p-8 md:p-12 flex flex-col`;
+            const titleVal = p[state.columns[0].id] || "";
+            const statusOpt = state.statusOptions.find(s => s.id === (p[state.columns.find(c=>c.type==='status')?.id] || 'none'));
+            let contentHtml = `<div class="mb-6"><h4 class="text-xl md:text-2xl font-black text-slate-800 leading-tight ${!titleVal?'text-slate-200':''}">${escapeHTML(titleVal) || 'No Title'}</h4></div>`;
+            contentHtml += `<div class="mb-4"><span class="text-[9px] font-black px-3 py-1 bg-slate-100 text-slate-400 rounded-full uppercase tracking-widest border border-slate-200 ${statusOpt.colorClass}">${statusOpt.label}</span></div>`;
             state.columns.forEach((col, cIdx) => {
+                if (cIdx === 0 || col.type === 'status') return;
                 const val = p[col.id] || "";
-                if (cIdx === 0) {
-                    contentHtml += `<div class="mb-6"><h4 class="text-xl md:text-2xl font-black text-slate-800 leading-tight">${val || '<span class="text-slate-200">No Title</span>'}</h4></div>`;
-                } else if (col.type === 'status') {
-                    const o = state.statusOptions.find(s=>s.id===(val||'none'));
-                    contentHtml += `<div class="mb-4"><span class="text-[9px] font-black px-3 py-1 bg-slate-100 text-slate-400 rounded-full uppercase tracking-widest border border-slate-200">${o.label}</span></div>`;
-                } else {
-                    if (val) contentHtml += `<div class="mb-4 text-xs text-slate-400 leading-loose line-clamp-6 whitespace-pre-wrap">${val}</div>`;
-                }
+                if (val) contentHtml += `<div class="mb-4 text-xs text-slate-400 leading-loose whitespace-pre-wrap">${escapeHTML(val)}</div>`;
             });
-
-            pageDiv.innerHTML = `
-                <div class="flex justify-between items-center mb-8">
-                    <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">${p.type}</span>
-                </div>
-                <div class="flex-1 overflow-hidden">
-                    ${contentHtml}
-                </div>
-                <div class="mt-8 flex ${isLeft ? 'justify-start' : 'justify-end'}">
-                    <span class="text-2xl font-black text-slate-200 tracking-tighter">P${p.num}</span>
-                </div>
-            `;
+            pageDiv.innerHTML = `<div class="flex justify-between items-center mb-8"><span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">${p.type}</span></div><div class="flex-1 overflow-auto">${contentHtml}</div><div class="mt-8 flex ${isLeft ? 'justify-start' : 'justify-end'}"><span class="text-2xl font-black text-slate-200 tracking-tighter">P${p.num}</span></div>`;
             wrap.appendChild(pageDiv);
         });
         return wrap;
     }
 
     function renderFlipView() {
-        const v = document.getElementById('bookViewer'); 
-        v.innerHTML = ''; 
-        const idx = state.flipIndex; 
-        const total = state.totalPages; 
-        const steps = 1 + (total - 2) / 2 + 1;
+        const v = document.getElementById('bookViewer'); v.innerHTML = '';
+        const idx = state.flipIndex; const total = state.totalPages; const steps = 1 + (total - 2) / 2 + 1;
         document.getElementById('flipPageIndicator').innerText = `${idx + 1} / ${Math.floor(steps)} 見開き`;
-        document.getElementById('flipPrevBtn').disabled = (idx === 0); 
-        document.getElementById('flipNextBtn').disabled = (idx >= steps - 1);
-        
-        if (idx === 0) {
-            v.appendChild(createFlipPage(state.pages[0], 'book-page-right w-[280px] h-[400px] sm:w-[380px] sm:h-[540px]'));
-        } else if (idx === steps - 1) {
-            v.appendChild(createFlipPage(state.pages[total - 1], 'book-page-left w-[280px] h-[400px] sm:w-[380px] sm:h-[540px]'));
-        } else { 
-            const l = (idx - 1) * 2 + 1; 
-            v.appendChild(createFlipPage(state.pages[l], 'book-page-left w-[240px] h-[350px] sm:w-[350px] sm:h-[500px]')); 
-            v.appendChild(document.createElement('div')).className = 'book-spine'; 
-            v.appendChild(createFlipPage(state.pages[l+1], 'book-page-right w-[240px] h-[350px] sm:w-[350px] sm:h-[500px]')); 
-        }
+        document.getElementById('flipPrevBtn').disabled = (idx === 0); document.getElementById('flipNextBtn').disabled = (idx >= steps - 1);
+        if (idx === 0) v.appendChild(createFlipPage(state.pages[0], 'book-page-right w-[280px] h-[400px] sm:w-[380px] sm:h-[540px]'));
+        else if (idx === steps - 1) v.appendChild(createFlipPage(state.pages[total - 1], 'book-page-left w-[280px] h-[400px] sm:w-[380px] sm:h-[540px]'));
+        else { const l = (idx - 1) * 2 + 1; v.appendChild(createFlipPage(state.pages[l], 'book-page-left w-[240px] h-[350px] sm:w-[350px] sm:h-[500px]')); v.appendChild(document.createElement('div')).className = 'book-spine'; v.appendChild(createFlipPage(state.pages[l+1], 'book-page-right w-[240px] h-[350px] sm:w-[350px] sm:h-[500px]')); }
     }
 
     function createFlipPage(p, cls) {
-        const d = document.createElement('div'); 
-        d.className = `book-page bg-white p-10 flex flex-col ${cls}`;
-        let html = ""; 
-        state.columns.forEach((col, i) => { 
-            const v = p[col.id] || ""; 
-            if (i === 0) html += `<div class="font-black text-xl text-slate-800 mb-6 border-b-4 border-brand-yellow pb-4 leading-tight">${v || `<span class="text-slate-100 italic">No Title</span>`}</div>`; 
-            else if (col.type === 'status') { 
-                const o = state.statusOptions.find(x => x.id === v) || state.statusOptions[0]; 
-                html += `<div class="mb-6"><span class="badge ${o.colorClass}">${o.label}</span></div>`; 
-            } else if (col.type === 'staff') html += `<div class="text-[10px] font-black text-slate-300 uppercase mb-2 tracking-widest"><i class="fa-solid fa-user mr-2"></i>${v || '未割り当て'}</div>`; 
-            else html += `<div class="text-xs text-slate-400 line-clamp-[10] whitespace-pre-wrap leading-loose">${v}</div>`; 
+        const d = document.createElement('div'); d.className = `book-page bg-white p-10 flex flex-col ${cls}`;
+        let html = `<div class="flex justify-between items-center mb-8"><span class="text-[9px] font-black px-3 py-1 bg-slate-900 text-white rounded-lg uppercase tracking-widest">${escapeHTML(p.type)}</span><span class="text-3xl font-black text-slate-100">P${p.num}</span></div><div class="flex-1 overflow-hidden">`;
+        state.columns.forEach((col, i) => {
+            const v = p[col.id] || "";
+            if (i === 0) html += `<div class="font-black text-xl text-slate-800 mb-6 border-b-4 border-brand-yellow pb-4 leading-tight ${!v?'text-slate-100 italic':''}">${escapeHTML(v) || 'No Title'}</div>`;
+            else if (col.type === 'status') { const o = state.statusOptions.find(x => x.id === v) || state.statusOptions[0]; html += `<div class="mb-6"><span class="badge ${o.colorClass}">${o.label}</span></div>`; }
+            else if (col.type === 'staff') html += `<div class="text-[10px] font-black text-slate-300 uppercase mb-2 tracking-widest"><i class="fa-solid fa-user mr-2"></i>${escapeHTML(v) || '未割り当て'}</div>`;
+            else html += `<div class="text-xs text-slate-400 line-clamp-[10] whitespace-pre-wrap leading-loose">${escapeHTML(v)}</div>`;
         });
-        d.innerHTML = `<div class="flex justify-between items-center mb-8"><span class="text-[9px] font-black px-3 py-1 bg-slate-900 text-white rounded-lg uppercase tracking-widest">${p.type}</span><span class="text-3xl font-black text-slate-100">P${p.num}</span></div><div class="flex-1 overflow-hidden">${html}</div>`; 
-        return d;
+        d.innerHTML = html + `</div>`; return d;
     }
 
     function flipNext() { if (state.flipIndex < (1 + (state.totalPages - 2) / 2 + 1) - 1) { state.flipIndex++; renderFlipView(); } }
     function flipPrev() { if (state.flipIndex > 0) { state.flipIndex--; renderFlipView(); } }
 
     function switchView(view) {
-        state.view = view;
-        document.getElementById('tableView').classList.toggle('hidden', view !== 'table');
-        document.getElementById('spreadView').classList.toggle('hidden', view !== 'spread');
-        document.getElementById('flipView').classList.toggle('hidden', view !== 'flip');
-        
-        ['table', 'spread', 'flip'].forEach(t => {
-            const el = document.getElementById(`tab-${t}`);
-            el.className = (t === view) 
-                ? "px-8 py-3 rounded-xl text-xs font-black transition-all bg-white shadow-sm border border-slate-200"
-                : "px-8 py-3 rounded-xl text-xs font-black transition-all text-slate-400 hover:text-slate-700";
-        });
-        if (view === 'spread') renderSpread();
-        if (view === 'flip') renderFlipView();
+        state.view = view; document.getElementById('tableView').classList.toggle('hidden', view !== 'table'); document.getElementById('spreadView').classList.toggle('hidden', view !== 'spread'); document.getElementById('flipView').classList.toggle('hidden', view !== 'flip');
+        ['table', 'spread', 'flip'].forEach(t => { const el = document.getElementById(`tab-${t}`); el.className = (t === view) ? "px-8 py-3 rounded-xl text-xs font-black transition-all bg-white shadow-sm border border-slate-200" : "px-8 py-3 rounded-xl text-xs font-black transition-all text-slate-400 hover:text-slate-700"; });
+        if (view === 'spread') renderSpread(); if (view === 'flip') renderFlipView(); if (view === 'table') setTimeout(() => document.querySelectorAll('textarea').forEach(autoResize), 0);
     }
 
-    function updatePageData(idx, f, v) { state.pages[idx][f] = v; }
-    function addColumn(t) {
-        const id = 'col_' + Date.now();
-        state.columns.push({ id, label: '新規項目', type: t });
-        state.pages.forEach(p => p[id] = (t === 'status' ? 'none' : ""));
-        render();
-    }
-    function deleteColumn(id) { state.columns = state.columns.filter(c => c.id !== id); render(); }
-    function renameColumn(id, name) { const col = state.columns.find(c => c.id === id); if (col) col.label = name || col.label; }
+    function updatePageData(idx, f, v) { state.pages[idx][f] = v; saveToLocalStorage(); }
+    function addColumn(t) { const id = 'col_' + Date.now(); state.columns.push({ id, label: '新規項目', type: t }); state.pages.forEach(p => p[id] = (t === 'status' ? 'none' : "")); render(); saveToLocalStorage(); }
+    function deleteColumn(id) { state.columns = state.columns.filter(c => c.id !== id); render(); saveToLocalStorage(); }
+    function renameColumn(id, name) { const col = state.columns.find(c => c.id === id); if (col) col.label = name || col.label; saveToLocalStorage(); }
     function updateSignature(val) { state.signature = parseInt(val); state.totalPages = Math.ceil(state.totalPages / state.signature) * state.signature; generatePages(); render(); }
     function changePageCount(d) { state.totalPages += (d * state.signature); if (state.totalPages < 4) state.totalPages = 4; generatePages(); render(); }
-    function downloadJSON() {
-        const data = JSON.stringify(state, null, 2);
-        const blob = new Blob([data], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `flatplan_${new Date().toISOString().slice(0,10)}.json`;
-        a.click();
+    function openStaffModal() { renderStaffList(); document.getElementById('staffModal').classList.remove('hidden'); }
+    function closeStaffModal() { document.getElementById('staffModal').classList.add('hidden'); render(); }
+    function renderStaffList() {
+        const c = document.getElementById('staffListContainer'); c.innerHTML = '';
+        state.staffOptions.forEach((n, i) => {
+            const r = document.createElement('div'); r.className = "flex gap-2 items-center";
+            r.innerHTML = `<input type="text" value="${escapeHTML(n)}" class="flex-1 px-3 py-1.5 border-2 border-slate-100 rounded-lg text-sm font-bold focus:border-slate-900 outline-none"><button class="text-slate-300 hover:text-red-500 transition-colors p-1"><i class="fa-solid fa-circle-xmark"></i></button>`;
+            r.querySelector('input').onchange = function() { updateStaffName(i, this.value); };
+            r.querySelector('button').onclick = function() { removeStaffMember(i); };
+            c.appendChild(r);
+        });
     }
-    function uploadJSON(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try { state = JSON.parse(event.target.result); render(); } catch (err) { alert("Error loading file"); }
-        };
-        reader.readAsText(file);
-    }
+    function addStaffMember() { const i = document.getElementById('newStaffName'); if (i.value.trim()) { state.staffOptions.push(i.value.trim()); i.value = ''; renderStaffList(); saveToLocalStorage(); } }
+    function updateStaffName(i, n) { if (n.trim()) { state.staffOptions[i] = n.trim(); saveToLocalStorage(); } }
+    function removeStaffMember(i) { state.staffOptions.splice(i, 1); renderStaffList(); saveToLocalStorage(); }
+    function downloadJSON() { const data = JSON.stringify(state, null, 2); const b = new Blob([data], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `flatplan_${new Date().toISOString().slice(0,10)}.json`; a.click(); }
+    function uploadJSON(e) { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => { try { state = JSON.parse(ev.target.result); render(); saveToLocalStorage(); } catch (err) { alert("Error loading file"); } }; r.readAsText(f); }
     function openAddColModal() { document.getElementById('addColModal').classList.remove('hidden'); }
     function closeAddColModal() { document.getElementById('addColModal').classList.add('hidden'); }
-
     window.onload = init;
 </script>
 </body>
